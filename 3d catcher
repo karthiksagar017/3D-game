@@ -1,0 +1,90 @@
+import pygame
+from pygame.locals import *
+from OpenGL.GL import *
+from OpenGL.GLU import *
+import numpy as np
+
+# Define vertices for a cube
+vertices = [
+    [1, 1, -1],
+    [1, -1, -1],
+    [-1, -1, -1],
+    [-1, 1, -1],
+    [1, 1, 1],
+    [1, -1, 1],
+    [-1, -1, 1],
+    [-1, 1, 1],
+]
+
+edges = [
+    (0, 1), (1, 2), (2, 3), (3, 0),
+    (4, 5), (5, 6), (6, 7), (7, 4),
+    (0, 4), (1, 5), (2, 6), (3, 7)
+]
+
+def draw_cube(position):
+    glPushMatrix()
+    glTranslatef(*position)
+    glBegin(GL_LINES)
+    for edge in edges:
+        for vertex in edge:
+            glVertex3fv(vertices[vertex])
+    glEnd()
+    glPopMatrix()
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
+    gluPerspective(45, (800 / 600), 0.1, 50.0)
+    glTranslatef(0.0, 0.0, -10)
+
+    clock = pygame.time.Clock()
+
+    # Initialize positions
+    ai_position = np.array([0.0, 0.0, 0.0], dtype=float)
+    target_position = np.array([3.0, 3.0, 0.0], dtype=float)
+
+    # AI movement speed
+    speed = 0.05
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
+        
+        # Move the target based on user input
+        keys = pygame.key.get_pressed()
+        if keys[K_LEFT]:
+            target_position[0] -= 0.1
+        if keys[K_RIGHT]:
+            target_position[0] += 0.1
+        if keys[K_UP]:
+            target_position[1] += 0.1
+        if keys[K_DOWN]:
+            target_position[1] -= 0.1
+
+        # AI moves towards the target
+        direction = target_position - ai_position
+        if np.linalg.norm(direction) > speed:  # Only move if far enough
+            ai_position += speed * direction / np.linalg.norm(direction)
+
+        # Clear screen
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        # Draw AI and target
+        glColor3f(1, 0, 0)  # Red for AI
+        draw_cube(ai_position)
+        glColor3f(0, 1, 0)  # Green for Target
+        draw_cube(target_position)
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
